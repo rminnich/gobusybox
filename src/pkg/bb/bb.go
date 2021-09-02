@@ -535,6 +535,20 @@ func dealWithDeps(env golang.Environ, bbDir, tmpDir, pkgDir string, mainPkgs []*
 			if err := mod.AddReplace(mpath, "", path.Join("..", "..", mpath), ""); err != nil {
 				return fmt.Errorf("could not add replace rule for %v to go.mod: %v", mpath, err)
 			}
+			// Also copy over every replace directive
+			gomodData, err := ioutil.ReadFile(module.GoMod)
+			if err != nil {
+				return err
+			}
+			gomod, err := modfile.Parse(module.GoMod, gomodData, nil)
+			if err != nil {
+				return err
+			}
+			for _, r := range gomod.Replace {
+				if err := mod.AddReplace(r.Old.Path, r.Old.Version, r.New.Path, r.New.Version); err != nil {
+					return err
+				}
+			}
 		}
 
 		gomod, err := mod.Format()
